@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Browser OCR</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        height: 100vh;
+        background: #f0f0f0;
+        display: flex;
+        gap: 20px;
+      }
+
+      .window {
+        flex: 1;
+        height: calc(100% - 40px);
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        overflow-y: auto;
+      }
+
+      #preview {
+        max-width: 100%;
+        max-height: 60vh;
+        margin: 20px 0;
+        display: none;
+      }
+
+      .upload-btn {
+        padding: 12px 24px;
+        background: #e31837;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      #result {
+        white-space: pre-wrap;
+        font-family: monospace;
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #e31837;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        display: none;
+        margin: 20px auto;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="window">
+      <input type="file" id="upload" accept="image/*" hidden />
+      <button
+        class="upload-btn"
+        onclick="document.getElementById('upload').click()"
+      >
+        <br><svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          fill="currentColor"
+          class="bi bi-camera"
+          viewBox="0 0 16 16"
+        >
+          <path
+            d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z"
+          />
+          <path
+            d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"
+          />
+        </svg></br>
+         Upload Image
+      </button>
+      <div class="loader" id="loader"></div>
+      <img id="preview" />
+      <div id="result"></div>
+    </div>
+
+    <div class="window">
+      <!-- Right window remains blank -->
+    </div>
+
+    <!-- Include Tesseract.js -->
+    <script src="https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js"></script>
+
+    <script>
+      const upload = document.getElementById("upload");
+      const preview = document.getElementById("preview");
+      const result = document.getElementById("result");
+      const loader = document.getElementById("loader");
+
+      // Initialize Tesseract worker
+      const worker = Tesseract.createWorker();
+
+      (async () => {
+        await worker.load();
+        await worker.loadLanguage("eng");
+        await worker.initialize("eng");
+      })();
+
+      upload.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Show preview
+        preview.style.display = "block";
+        preview.src = URL.createObjectURL(file);
+
+        // Show loader
+        loader.style.display = "block";
+        result.textContent = "";
+
+        try {
+          // Perform OCR
+          const {
+            data: { text },
+          } = await worker.recognize(file);
+
+          // Display results
+          result.textContent = text;
+        } catch (error) {
+          result.textContent = "Error: " + error.message;
+        } finally {
+          loader.style.display = "none";
+        }
+      });
+    </script>
+  </body>
+</html>
